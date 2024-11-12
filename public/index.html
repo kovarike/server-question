@@ -1,0 +1,69 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Perguntas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game">
+        <div id="login">
+            <input type="text" id="nameInput" placeholder="Digite seu nome">
+            <button onclick="joinGame()">Entrar no Jogo</button>
+        </div>
+        <form id="gameArea" style="display:none;">
+            <h2>Jogador: <span id="playerName"></span></h2>
+            <div id="question"></div>
+            <input type="text" id="answerInput" placeholder="Sua resposta">
+            <button onclick="sendAnswer()" type="submit">Responder</button>
+            <p id="feedback"></p>
+        </form>
+        <div id="results" style="display:none;"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let playerName;
+        document.getElementById("gameArea").addEventListener("submit", function(event){
+            event.preventDefault();
+        }) 
+
+        function joinGame() {
+            playerName = document.getElementById("nameInput").value;
+            if (playerName) {
+                socket.emit("joinGame", playerName);
+                document.getElementById("login").style.display = "none";
+                document.getElementById("gameArea").style.display = "block";
+                document.getElementById("playerName").innerText = playerName;
+            }
+        }
+
+        socket.on("startGame", (players) => {
+            document.getElementById("feedback").innerText = "Jogo iniciado com: " + players.join(" e ");
+        });
+
+        socket.on("question", (question) => {
+            document.getElementById("question").innerText = question.question;
+        });
+
+        function sendAnswer() {
+            const answer = document.getElementById("answerInput").value;
+            socket.emit("answer", answer);
+            document.getElementById("answerInput").value = "";
+        }
+
+        socket.on("feedback", (message) => {
+            document.getElementById("feedback").innerText = message;
+        });
+
+        socket.on("gameOver", (result) => {
+            document.getElementById("gameArea").style.display = "none";
+            document.getElementById("results").style.display = "block";
+            document.getElementById("results").innerHTML = "<h3>Resultados:</h3>" + result.join("<br>");
+        });
+    </script>
+</body>
+</html>
